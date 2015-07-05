@@ -144,21 +144,26 @@ class TemporalPoolerMonitorMixin(MonitorMixinBase):
     intensity of the reset background with 0.0 being white and 1.0 being black
     @return (Plot) plot
     """
+    cellTrace = self._mmTraces["activeCells"].data
+    cellCount = self.getNumColumns()
+    activityType = "Cell Activity"
+    return self.mmGetCellTracePlot(cellTrace, cellCount, activityType,
+                                   title=title, showReset=showReset,
+                                   resetShading=resetShading)
+
+
+  def mmGetPermanencesPlot(self, title=None):
+    """ Returns plot of column permanences.
+    @param title an optional title for the figure
+    @return (Plot) plot
+    """
     plot = Plot(self, title)
-    resetTrace = self.mmGetTraceResets().data
-    activeCellTrace = self._mmTraces["activeCells"].data
-    data = numpy.zeros((self._numColumns, 1))
-    for i in xrange(len(activeCellTrace)):
-      if showReset and resetTrace[i]:
-        activity = numpy.ones((self._numColumns, 1)) * resetShading
-      else:
-        activity = numpy.zeros((self._numColumns, 1))
 
-      activeSet = activeCellTrace[i]
-      activity[list(activeSet)] = 1
-      data = numpy.concatenate((data, activity), 1)
+    data = numpy.zeros((self.getNumColumns(), self.getNumInputs()))
+    for i in xrange(self.getNumColumns()):
+      self.getPermanence(i, data[i])
 
-    plot.add2DArray(data, xlabel="Time", ylabel="Cell Activity")
+    plot.add2DArray(data, xlabel="Permanences", ylabel="Column")
     return plot
 
 

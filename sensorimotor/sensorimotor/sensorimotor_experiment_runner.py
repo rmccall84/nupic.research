@@ -33,6 +33,8 @@ from sensorimotor.fast_general_temporal_memory import (
 # Uncomment the line below to use GeneralTemporalMemory
 # from sensorimotor.general_temporal_memory import GeneralTemporalMemory
 from sensorimotor.temporal_pooler import TemporalPooler
+# Uncomment the line below to use SpatialTemporalPooler
+# from sensorimotor.spatial_temporal_pooler import SpatialTemporalPooler as TemporalPooler
 from sensorimotor.temporal_pooler_monitor_mixin import (
   TemporalPoolerMonitorMixin)
 class MonitoredGeneralTemporalMemory(TemporalMemoryMonitorMixin,
@@ -82,10 +84,11 @@ class SensorimotorExperimentRunner(object):
     "numActiveColumnsPerInhArea": "Sorry",
   }
 
-  def __init__(self, tmOverrides=None, tpOverrides=None, seed=42, verbosity=0):
+  def __init__(self, tmOverrides=None, tpOverrides=None, seed=42):
     # Initialize Layer 4 temporal memory
     params = dict(self.DEFAULT_TM_PARAMS)
     params.update(tmOverrides or {})
+    params["seed"] = seed
     self._checkParams(params)
     self.tm = MonitoredGeneralTemporalMemory(mmName="TM", **params)
 
@@ -93,6 +96,7 @@ class SensorimotorExperimentRunner(object):
     params = dict(self.DEFAULT_TP_PARAMS)
     params["inputDimensions"] = [self.tm.numberOfCells()]
     params["potentialRadius"] = self.tm.numberOfCells()
+    params["seed"] = seed
     params.update(tpOverrides or {})
     self._checkParams(params)
     self.tp = MonitoredTemporalPooler(mmName="TP", **params)
@@ -149,9 +153,6 @@ class SensorimotorExperimentRunner(object):
      sensorimotorSequence,
      sequenceLabels) = sequences
 
-    self.tm.mmClearHistory()
-    self.tp.mmClearHistory()
-
     currentTime = time.time()
 
     for i in xrange(len(sensorSequence)):
@@ -173,12 +174,18 @@ class SensorimotorExperimentRunner(object):
         currentTime = time.time()
 
     if verbosity >= 2:
-      traces = []
-      traces += self.tm.mmGetDefaultTraces(verbosity=verbosity)
+      # Print default TM traces
+      traces = self.tm.mmGetDefaultTraces(verbosity=verbosity)
+      print MonitorMixinBase.mmPrettyPrintTraces(traces,
+                                                 breakOnResets=
+                                                 self.tm.mmGetTraceResets())
+
       if tpLearn is not None:
-        traces += self.tp.mmGetDefaultTraces(verbosity=verbosity)
-      print MonitorMixinBase.mmPrettyPrintTraces(
-        traces, breakOnResets=self.tm.mmGetTraceResets())
+        # Print default TP traces
+        traces = self.tp.mmGetDefaultTraces(verbosity=verbosity)
+        print MonitorMixinBase.mmPrettyPrintTraces(traces,
+                                                   breakOnResets=
+                                                   self.tp.mmGetTraceResets())
       print
 
 
